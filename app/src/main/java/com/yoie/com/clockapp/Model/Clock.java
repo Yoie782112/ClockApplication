@@ -1,4 +1,7 @@
-package com.yoie.com.clockapp.ObjDataStructure;
+package com.yoie.com.clockapp.Model;
+
+import android.databinding.Bindable;
+import android.util.Log;
 
 public class Clock {
 
@@ -11,7 +14,6 @@ public class Clock {
     public Clock(){
 
     }
-
     public String getName() {
         return name;
     }
@@ -41,6 +43,14 @@ public class Clock {
         return id;
     }
 
+    public String getNumber() {
+        return number;
+    }
+    public void setNumber(String number) {
+        this.number = number;
+    }
+
+
     public void setId(long id) {
         this.id = id;
     }
@@ -49,4 +59,10 @@ public class Clock {
     private String name;
     private String date;
     private String content;
+    private String number;
+
+    public void click(){
+        Log.e("Clock" + number, "clicked");
+
+    }
 }

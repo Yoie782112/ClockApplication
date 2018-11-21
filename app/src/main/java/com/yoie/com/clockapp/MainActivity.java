@@ -5,26 +5,45 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ListView;
 
-import com.yoie.com.clockapp.ObjDataStructure.Clock;
+import com.yoie.com.clockapp.Model.Clock;
 import com.yoie.com.clockapp.SqlDB.ClockAppSQLiteDbHelper;
-import com.yoie.com.clockapp.SqlDB.ClockDao;
+import com.yoie.com.clockapp.SqlDB.ClockDaoImp;
+import com.yoie.com.clockapp.ViewModel.ListViewAdapter;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
 
 public class MainActivity extends AppCompatActivity {
 
+    private final static String TAG = "";
     private Context mContext = null;
     private ClockAppSQLiteDbHelper mSQLHelper = null;
     private Toolbar mToolBar = null;
+    private ClockDaoImp mClockDataBaseProxy = null;
+    private List<Clock> mClockList = new ArrayList<Clock>();
+    private ListViewAdapter mListViewAdapter;
+    private ListView mListView;
+
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setData();
-        setUI();
+        initView();
+        initData();
 
     }
 
@@ -36,12 +55,10 @@ public class MainActivity extends AppCompatActivity {
     }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
         switch ( id ){
             case R.id.action_delete:
+                ClockDaoImp.sDeleteTableSQL();
                 break;
             case R.id.action_hints:
                 break;
@@ -49,7 +66,6 @@ public class MainActivity extends AppCompatActivity {
                 break;
 
         }
-
 
 
         return super.onOptionsItemSelected(item);
@@ -62,17 +78,18 @@ public class MainActivity extends AppCompatActivity {
         super.onStop();
     }
 
-    private void setData(){
+    private void initData(){
         mContext = this.getBaseContext();
         mSQLHelper = new ClockAppSQLiteDbHelper(mContext);
         mSQLHelper.onCreate(ClockAppSQLiteDbHelper.getDatabase(mContext));
+        mClockDataBaseProxy = new ClockDaoImp(mContext);
+        refresh();
     }
 
-    private void setUI(){
+    private void initView(){
         setContentView(R.layout.activity_main);
-
-        setMenu();
-
+        mListView = ((ListView) findViewById(R.id.lv));
+        initMenu();
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -82,21 +99,17 @@ public class MainActivity extends AppCompatActivity {
 
                 if(mSQLHelper != null)
                 {
-                    ClockDao dao = new ClockDao(mContext);
-                    dao.sample();
-                    List<Clock> clockList = dao.getAll();
-                    int size = clockList.size();
+                    mClockDataBaseProxy = new ClockDaoImp(mContext);
+                    mClockDataBaseProxy.test();
+                    refresh();
                 }
-
-
-
 
             }
         });
     }
 
 
-    private void setMenu(){
+    private void initMenu(){
         mToolBar = (Toolbar) findViewById(R.id.toolbar);
         mToolBar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
@@ -112,6 +125,8 @@ public class MainActivity extends AppCompatActivity {
                 int id = item.getItemId();
                 switch ( id ){
                     case R.id.action_delete:
+                        mClockDataBaseProxy.deleteAll();
+                        refresh();
                         break;
                     case R.id.action_hints:
                         break;
@@ -119,17 +134,62 @@ public class MainActivity extends AppCompatActivity {
                         break;
 
                 }
-                String title = item.toString();
                 return true;
             }
 
 
         });
         //setSupportActionBar(mToolBar);  寫在這裡事件會跑到onOptionsItemSelected(item)
-
         getSupportActionBar().setHomeButtonEnabled(true);
     }
 
+
+    public void refresh(){
+        Observable<List<Clock>> observable = Observable.create(new ObservableOnSubscribe<List<Clock>>() {
+            @Override
+            public void subscribe(ObservableEmitter<List<Clock>> e) throws Exception {
+                //Use onNext to emit each item in the stream//
+                e.onNext(mClockDataBaseProxy.getAll());
+                e.onComplete();
+            }
+        });
+
+        Observer<List<Clock>> observer = new Observer<List<Clock>>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+                Log.e(TAG, "onSubscribe: ");
+            }
+
+            @Override
+            public void onNext(List<Clock> value) {
+                mClockList = value;
+                Log.e(TAG, "onNext: " + value);
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Log.e(TAG, "onError: ");
+            }
+
+            @Override
+            public void onComplete() {
+                if(mClockList.size() <=0)
+                    Log.e(TAG, "no Clocks");
+                else {
+                    for(int i = 0 ; i <mClockList.size(); i++)
+                    {
+                        Clock clock = mClockList.get(i);
+                        clock.setNumber(String.valueOf(i));
+                        mClockList.set(i, clock);
+                    }
+                }
+                mListViewAdapter = new ListViewAdapter(mContext, R.layout.clock_item, mClockList, com.yoie.com.clockapp.BR.clock);
+                mListView.setAdapter(mListViewAdapter);
+            }
+        };
+        observable.subscribe(observer);
+
+    }
 
 
 }
