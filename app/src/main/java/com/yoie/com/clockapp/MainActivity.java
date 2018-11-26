@@ -1,6 +1,8 @@
 package com.yoie.com.clockapp;
 
+import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -12,6 +14,7 @@ import android.view.View;
 import android.widget.ListView;
 
 import com.yoie.com.clockapp.Model.Clock;
+import com.yoie.com.clockapp.Services.NotificationService;
 import com.yoie.com.clockapp.SqlDB.ClockAppSQLiteDbHelper;
 import com.yoie.com.clockapp.SqlDB.ClockDaoImp;
 import com.yoie.com.clockapp.ViewModel.ListViewAdapter;
@@ -25,7 +28,7 @@ import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity{
 
     private final static String TAG = "";
     private Context mContext = null;
@@ -44,7 +47,18 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         initView();
         initData();
+        startNotifiction();
 
+        ActivityLifeCycleHelper
+                .init(this.getApplication())
+                .setOnEnterForegroundListener(new ActivityLifeCycleHelper.OnEnterForegroundListener() {
+                    @Override
+                    public void onEnterForeground() {
+                        Log.d("LifeCycle","onEnterForeground");
+
+                    }
+
+                });
     }
 
     @Override
@@ -189,6 +203,17 @@ public class MainActivity extends AppCompatActivity {
         };
         observable.subscribe(observer);
 
+    }
+
+
+    private void startNotifiction(){
+        Intent intent = new Intent(this, NotificationService.class);
+        startService(intent);
+    }
+
+    private void stopNotifiction(){
+        Intent intent = new Intent(this, NotificationService.class);
+        stopService(intent);
     }
 
 
