@@ -1,6 +1,5 @@
 package com.yoie.com.clockapp;
 
-import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.support.design.widget.FloatingActionButton;
@@ -13,6 +12,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.iid.FirebaseInstanceId;
 import com.yoie.com.clockapp.Model.Clock;
 import com.yoie.com.clockapp.Services.NotificationService;
 import com.yoie.com.clockapp.SqlDB.ClockAppSQLiteDbHelper;
@@ -47,8 +48,8 @@ public class MainActivity extends AppCompatActivity{
         super.onCreate(savedInstanceState);
         initView();
         initData();
-        startNotifiction();
 
+        startNotifiction();
         ActivityLifeCycleHelper
                 .init(this.getApplication())
                 .setOnEnterForegroundListener(new ActivityLifeCycleHelper.OnEnterForegroundListener() {
@@ -111,6 +112,8 @@ public class MainActivity extends AppCompatActivity{
 //                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
 //                        .setAction("Action", null).show();
 
+                String refreshedToken = FirebaseInstanceId.getInstance().getToken();
+                Log.d("fcm", "Refreshed token: " + refreshedToken);
                 if(mSQLHelper != null)
                 {
                     mClockDataBaseProxy = new ClockDaoImp(mContext);
@@ -215,6 +218,8 @@ public class MainActivity extends AppCompatActivity{
         Intent intent = new Intent(this, NotificationService.class);
         stopService(intent);
     }
+
+
 
 
 }
